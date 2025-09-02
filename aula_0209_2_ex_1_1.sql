@@ -1,0 +1,19 @@
+DROP TABLE IF EXISTS MODELO, ITEM;
+
+-- Tabela MODELO
+CREATE TABLE MODELO (
+    Numero_modelo INT PRIMARY KEY,
+    Nome_modelo VARCHAR(100) NOT NULL,
+	Descricao_modelo VARCHAR(100)
+);
+
+-- Tabela ITEM
+CREATE TABLE ITEM (
+    Numero_item INT PRIMARY KEY,
+    Valor_item REAL NOT NULL CHECK(Valor_item>0),
+    Numero_modelo INT NOT NULL,
+    FOREIGN KEY (Numero_modelo) REFERENCES MODELO(Numero_modelo)
+);
+
+/*ALTER TABLE ITEM ADD CONSTRAINT CHECK(Valor_item>0); --ADICIONADO NA LINHA */ 
+ALTER TABLE MODELO ADD CONSTRAINT CHECK(LENGTH(Descricao_modelo)>30);

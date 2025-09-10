@@ -1,0 +1,104 @@
+DROP TABLE IF EXISTS CATEGORIA, MODELO, ITEM, CLIENTE, AVALIACAO, VENDA;
+
+CREATE TABLE CATEGORIA (
+    Codigo VARCHAR(3) PRIMARY KEY,
+    Nome_categoria VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE MODELO (
+    Numero_modelo INT PRIMARY KEY,
+    Nome_modelo VARCHAR(50) NOT NULL,
+	Descricao_modelo VARCHAR(100) CHECK(LENGTH(Descricao_modelo)>30),
+    Codigo VARCHAR(3) NOT NULL,
+    FOREIGN KEY (Codigo) REFERENCES CATEGORIA(Codigo)
+);
+
+CREATE TABLE ITEM (
+    Numero_item INT PRIMARY KEY,
+    Valor_item REAL NOT NULL CHECK(Valor_item>0),
+    Numero_modelo INT NOT NULL,
+    FOREIGN KEY (Numero_modelo) REFERENCES MODELO(Numero_modelo)
+);
+
+CREATE TABLE CLIENTE (
+    Cpf_cliente VARCHAR(11) PRIMARY KEY,
+    Nome_cliente VARCHAR(100) NOT NULL,
+    Data_nascimento_cliente DATE,
+    Genero_cliente VARCHAR(5) CHECK(Genero_cliente IN ('M','F','Outro'))
+);
+
+CREATE TABLE AVALIACAO (
+    Nota INT NOT NULL CHECK (Nota >= 0 AND Nota <= 5),
+    Cpf_cliente VARCHAR(11),
+    Numero_item INT,
+    PRIMARY KEY (Cpf_cliente, Numero_item),
+    FOREIGN KEY (Cpf_cliente) REFERENCES CLIENTE(Cpf_cliente),
+    FOREIGN KEY (Numero_item) REFERENCES ITEM(Numero_item)
+);
+
+CREATE TABLE VENDA (
+    Numero_item INT PRIMARY KEY,
+    Cpf_cliente VARCHAR(11) NOT NULL,
+    Data_venda DATETIME NOT NULL,
+    Valor_venda REAL NOT NULL CHECK(Valor_venda>0),
+    FOREIGN KEY (Cpf_cliente) REFERENCES CLIENTE(Cpf_cliente),
+    FOREIGN KEY (Numero_item) REFERENCES ITEM(Numero_item)
+);
+
+INSERT INTO CATEGORIA VALUES
+('CMP', 'Computador'),
+('CEL', 'Celular');
+
+-- INSERINDO 3 MODELOS DE PRODUTO
+INSERT INTO MODELO VALUES
+(1, 'Notebook Pro', 'Notebook de alto desempenho para profissionais exigentes.', 'CMP'),
+(2, 'Desktop Gamer', 'Computador de mesa voltado para jogos com placa gráfica dedicada.', 'CMP'),
+(3, 'Smartphone X', 'Smartphone com tela infinita e câmera tripla para fotos incríveis.', 'CEL');
+
+-- INSERINDO 10 ITENS (ligados aos modelos)
+INSERT INTO ITEM VALUES 
+(101, 2500.00, 1),
+(102, 2700.00, 1),
+(103, 2600.00, 1),
+(201, 4800.00, 2),
+(202, 4900.00, 2),
+(203, 5000.00, 2),
+(301, 3200.00, 3),
+(302, 3400.00, 3),
+(303, 3300.00, 3),
+(304, 3500.00, 3);
+
+-- INSERINDO 4 CLIENTES
+INSERT INTO CLIENTE VALUES
+('12345678901', 'Ana Silva', '1990-05-14', 'F'),
+('23456789012', 'Bruno Souza', '1985-09-23', 'M'),
+('34567890123', 'Carla Dias', '1992-03-11', 'F'),
+('45678901234', 'Diego Lima', '1987-12-01', 'M');
+
+-- INSERINDO 3 AVALIAÇÕES (cada cliente avalia um item diferente)
+INSERT INTO AVALIACAO VALUES
+(5, '12345678901', 101),
+(4, '23456789012', 201),
+(3, '34567890123', 301);
+
+-- INSERINDO 5 VENDAS (cada item vendido uma única vez)
+INSERT INTO VENDA VALUES
+(101, '12345678901', '2025-09-10 14:00:00', 2500.00),
+(102, '23456789012', '2025-09-10 15:00:00', 2700.00),
+(201, '34567890123', '2025-09-10 16:00:00', 4800.00),
+(301, '45678901234', '2025-09-10 17:00:00', 3200.00),
+(303, '12345678901', '2025-09-10 18:00:00', 3300.00);
+
+-- CONSULTAS SIMPLES PARA MOSTRAR TODAS AS TUPLAS
+SELECT * FROM MODELO;
+SELECT * FROM ITEM;
+SELECT * FROM CLIENTE;
+SELECT * FROM AVALIACAO;
+SELECT * FROM VENDA;
+
+-- Listar as avaliações vinculadas a cada modelo de produto
+SELECT cliente.Nome_cliente, avaliacao.Nota 
+FROM avaliacao 
+INNER JOIN cliente 
+    ON avaliacao.Cpf_cliente = cliente.Cpf_cliente
+ORDER BY avaliacao.Nota DESC;

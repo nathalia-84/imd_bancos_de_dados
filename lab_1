@@ -1,0 +1,151 @@
+-- Laboratório 1
+-- Aluna: Nathalia Azevedo de Melo
+
+DROP TABLE IF EXISTS CATEGORIA, MODELO, ITEM, CLIENTE, AVALIACAO, VENDA;
+DROP VIEW IF EXISTS View_modelos_com_itens_nao_vendidos, View_produtos_mais_lucrativos;
+
+-- Ex 1
+CREATE TABLE MODELO (
+    Numero_modelo INT PRIMARY KEY,
+    Nome_modelo VARCHAR(50) NOT NULL,
+    Descricao_modelo VARCHAR(100) CHECK(LENGTH(Descricao_modelo)>30)
+);
+
+CREATE TABLE ITEM (
+    Numero_item INT PRIMARY KEY,
+    Valor_item REAL NOT NULL CHECK(Valor_item>0),
+    Numero_modelo INT NOT NULL,
+    FOREIGN KEY (Numero_modelo) REFERENCES MODELO(Numero_modelo)
+);
+
+CREATE TABLE CLIENTE (
+    Cpf_cliente VARCHAR(11) PRIMARY KEY,
+    Nome_cliente VARCHAR(100) NOT NULL,
+    Data_nascimento_cliente DATE,
+    Genero_cliente VARCHAR(5) CHECK(Genero_cliente IN ('M','F','Outro'))
+);
+
+CREATE TABLE AVALIACAO (
+    Nota INT NOT NULL CHECK (Nota >= 0 AND Nota <= 5),
+    Cpf_cliente VARCHAR(11),
+    Numero_modelo INT,
+    PRIMARY KEY (Cpf_cliente, Numero_modelo),
+    FOREIGN KEY (Cpf_cliente) REFERENCES CLIENTE(Cpf_cliente),
+    FOREIGN KEY (Numero_modelo) REFERENCES MODELO(Numero_modelo)
+);
+
+CREATE TABLE VENDA (
+    Numero_item INT PRIMARY KEY,
+    Cpf_cliente VARCHAR(11) NOT NULL,
+    Data_venda DATETIME NOT NULL,
+    Valor_venda REAL NOT NULL CHECK(Valor_venda>0),
+    FOREIGN KEY (Cpf_cliente) REFERENCES CLIENTE(Cpf_cliente),
+    FOREIGN KEY (Numero_item) REFERENCES ITEM(Numero_item)
+);
+
+
+-- Ex 2
+-- INSERINDO 3 MODELOS DE PRODUTO
+INSERT INTO MODELO VALUES
+(1, 'Notebook Pro', 'Notebook de alto desempenho para profissionais exigentes.'),
+(2, 'Desktop Gamer', 'Computador de mesa voltado para jogos com placa gráfica dedicada.'),
+(3, 'Smartphone X', 'Smartphone com tela infinita e câmera tripla para fotos incríveis.');
+
+-- INSERINDO 10 ITENS (ligados aos modelos)
+INSERT INTO ITEM VALUES 
+(101, 2500.00, 1),
+(102, 2700.00, 1),
+(103, 2600.00, 1),
+(201, 4800.00, 2),
+(202, 4900.00, 2),
+(203, 5000.00, 2),
+(301, 3200.00, 3),
+(302, 3400.00, 3),
+(303, 3300.00, 3),
+(304, 3500.00, 3);
+
+-- INSERINDO 4 CLIENTES
+INSERT INTO CLIENTE VALUES
+('12345678901', 'Ana Silva', '1990-05-14', 'F'),
+('23456789012', 'Bruno Souza', '1985-09-23', 'M'),
+('34567890123', 'Carla Dias', '1992-03-11', 'F'),
+('45678901234', 'Diego Lima', '1987-12-01', 'M');
+
+-- INSERINDO 3 AVALIAÇÕES (cada cliente avalia um modelo)
+INSERT INTO AVALIACAO VALUES 
+(5, '12345678901', 1), 
+(4, '23456789012', 2), 
+(3, '34567890123', 3);
+
+-- INSERINDO 5 VENDAS (cada item vendido uma única vez)
+INSERT INTO VENDA VALUES
+(101, '12345678901', '2025-09-10 14:00:00', 3000.00),  
+(102, '23456789012', '2025-09-10 15:00:00', 3800.00),  
+(201, '34567890123', '2025-09-10 16:00:00', 5590.00),  
+(301, '45678901234', '2025-09-10 17:00:00', 3800.00),  
+(303, '12345678901', '2025-09-10 18:00:00', 3700.00);  
+
+-- CONSULTAS SIMPLES PARA MOSTRAR TODAS AS TUPLAS
+SELECT * FROM MODELO;
+SELECT * FROM ITEM;
+SELECT * FROM CLIENTE;
+SELECT * FROM AVALIACAO;
+SELECT * FROM VENDA;
+
+-- Ex 3 – Migração
+CREATE TABLE CATEGORIA (
+    Codigo CHAR(3) PRIMARY KEY,
+    Nome_categoria VARCHAR(50) NOT NULL
+);
+
+INSERT INTO CATEGORIA VALUES
+('CMP', 'Computador'),
+('CEL', 'Celular');
+
+ALTER TABLE MODELO ADD COLUMN Codigo CHAR(3);
+
+UPDATE MODELO SET Codigo = 'CMP' WHERE Numero_modelo IN (1,2);
+UPDATE MODELO SET Codigo = 'CEL' WHERE Numero_modelo = 3;
+
+ALTER TABLE MODELO MODIFY COLUMN Codigo VARCHAR(3) NOT NULL;
+ALTER TABLE MODELO ADD CONSTRAINT fk_categoria FOREIGN KEY (Codigo) REFERENCES CATEGORIA(Codigo);
+
+-- Ex 4
+-- Listar as avaliações vinculadas a cada modelo de produto
+SELECT modelo.Nome_modelo, cliente.Nome_cliente, avaliacao.Nota
+FROM avaliacao
+JOIN cliente  ON avaliacao.Cpf_cliente = cliente.Cpf_cliente
+JOIN modelo  ON avaliacao.Numero_modelo = modelo.Numero_modelo
+ORDER BY avaliacao.Nota DESC;
+
+-- Ex 5
+CREATE VIEW View_modelos_com_itens_nao_vendidos AS
+SELECT 
+    modelo.Nome_modelo AS "Modelo",
+    COUNT(item.Numero_item) AS "Itens Não Vendidos"
+FROM modelo
+INNER JOIN item ON modelo.Numero_modelo = item.Numero_modelo
+WHERE item.Numero_item NOT IN (SELECT Numero_item FROM venda)
+GROUP BY modelo.Nome_modelo;
+
+SELECT * FROM View_modelos_com_itens_nao_vendidos;
+
+-- Ex 6
+CREATE VIEW View_produtos_mais_lucrativos AS
+SELECT 
+    modelo.Nome_modelo AS "Modelo", 
+    lucro.LucroTotal AS "Lucro"
+FROM modelo
+INNER JOIN (
+    SELECT 
+        item.Numero_modelo, 
+        SUM(venda.Valor_venda - item.Valor_item) AS LucroTotal
+    FROM venda
+    INNER JOIN item ON venda.Numero_item = item.Numero_item
+    GROUP BY item.Numero_modelo
+) AS lucro
+ON lucro.Numero_modelo = modelo.Numero_modelo
+ORDER BY lucro.LucroTotal DESC;
+
+SELECT * FROM View_produtos_mais_lucrativos;
+
